@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
 
     res.status(200).json({ reply });
   } catch (error) {
-    console.error('Chat error:', error);
-    res.status(500).json({ error: error.message || '调用失败' });
+    console.error('Error:', error);
+    res.status(500).json({ error: error.message || 'AI调用失败' });
   }
 };
