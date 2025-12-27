@@ -1,14 +1,15 @@
-const { Groq } = require('groq-sdk');
+const { OpenAI } = require('openai');  // 用 openai sdk
 
-const groq = new Groq({ apiKey: process.env.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 });
+const openai = new OpenAI({
+  apiKey: process.env.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,
+  baseURL: 'https://openrouter.ai/api/v1',
+});
 
-module.exports = async (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+// 在 completion 中指定免费模型
+const completion = await openai.chat.completions.create({
+  model: 'meta-llama/llama-3.1-8b-instruct:free',  // 免费模型，或 'mistralai/mixtral-8x7b-instruct:free'
+  messages: [ ... ],
+});
   try {
     // 读取文件
     const buffers = [];
@@ -46,3 +47,4 @@ module.exports.config = {
     sizeLimit: '10mb'
   }
 };
+
