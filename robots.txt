@@ -1,1 +1,28 @@
 
+
+User-agent: *
+Allow: /
+
+# 阻止常见 AI 爬虫（可选，2025 年流行做法）
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+Sitemap: https://aipdfl.com/sitemap.xml
