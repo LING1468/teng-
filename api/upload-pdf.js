@@ -1,6 +1,6 @@
 const { Groq } = require('groq-sdk');
 
-const groq = new Groq({ apiKey: process.env.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 });
+const groq = new Groq({ apiKey: process.env.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 });
 
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -10,20 +10,33 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // 简单读取文件
+    // 读取文件
     const buffers = [];
     for await (const chunk of req) buffers.push(chunk);
     const buffer = Buffer.concat(buffers);
 
-    // 直接返回成功（先测试是否能正常返回JSON）
+    // 直接测试 Groq 是否可用（最简单方式）
+    const completion = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: '说一句“你好，AI已就绪”' }],
+      model: 'llama3-8b-8192',  // 最稳定免费模型，无配额限制
+      temperature: 0,
+      max_tokens: 50,
+    });
+
+    const reply = completion.choices[0]?.message?.content?.trim() || 'AI无回复';
+
     res.status(200).json({ 
-      summary: '测试成功！您的API已正常运行。文件大小：' + buffer.length + ' bytes',
+      summary: `API测试成功！文件大小：${buffer.length} bytes\n\nAI回复：${reply}`,
       success: true 
     });
 
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: error.message || '未知错误' });
+    console.error('Final error:', error);
+    res.status(500).json({ 
+      error: 'API调用失败', 
+      message: error.message,
+      code: error.code || 'unknown'
+    });
   }
 };
 
