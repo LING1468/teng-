@@ -41,8 +41,8 @@ module.exports = async (req, res) => {
 
     res.status(200).json({ summary, success: true });
   } catch (error) {
-    console.error('DeepSeek error:', error);
-    res.status(500).json({ error: error.message || '调用失败' });
+    console.error('Error:', error);
+    res.status(500).json({ error: error.message || '服务器错误' });
   }
 };
 
