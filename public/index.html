@@ -170,7 +170,7 @@
                 <button class="btn" onclick="uploadPDFs()">上传并分析</button>
                 <button class="btn" onclick="generateMindmap()">生成思维导图</button>
                 <button class="btn" onclick="shareChat()">分享聊天记录</button>
-                <button class="btn btn-voice" onclick="startVoice()">🎤 语音提问</button>
+                <button class="btn btn-voice" onclick="startVoice()">语音提问</button>
             </div>
 
             <div id="file-list"></div>
@@ -223,7 +223,10 @@
     </div>
 
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+        // 确保 PDF.js worker 在 PDF.js 主脚本加载后设置
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+        }
 
         let files = [];
         let currentFileIndex = 0;
@@ -407,3 +410,4 @@
     </script>
 </body>
 </html>
+
