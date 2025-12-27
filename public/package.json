@@ -1,4 +1,7 @@
 {
+  "name": "aipdfl",
+  "version": "1.0.0",
+  "type": "module",          ← 添加这一行！
   "dependencies": {
     "groq-sdk": "^0.5.0",
     "pdf-parse": "^1.1.1"
