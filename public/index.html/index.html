@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>aipdfl.com 测试</title>
+    <style>
+        body { font-family: sans-serif; padding: 50px; background: #000; color: #0f0; text-align: center; }
+        input, button { padding: 15px; margin: 20px; font-size: 1.2rem; }
+        #result { margin-top: 40px; padding: 30px; background: #111; border-radius: 20px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>aipdfl.com API 测试页</h1>
+    <input type="file" id="file" accept=".pdf">
+    <button onclick="test()">测试上传 + AI总结</button>
+    <div id="result">结果将显示在这里...</div>
+
+    <script>
+        async function test() {
+            const file = document.getElementById('file').files[0];
+            if (!file) return alert('请选择PDF');
+
+            const form = new FormData();
+            form.append('file', file);
+
+            document.getElementById('result').textContent = '正在上传...';
+
+            try {
+                const res = await fetch('/api/upload-pdf', { method: 'POST', body: form });
+                const data = await res.json();
+                document.getElementById('result').textContent = '成功！\n\n' + JSON.stringify(data, null, 2);
+            } catch (e) {
+                document.getElementById('result').textContent = '失败：' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
