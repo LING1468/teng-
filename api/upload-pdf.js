@@ -1,39 +1,26 @@
 const { Groq } = require('groq-sdk');
-const pdf = require('pdf-parse');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Only POST allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  const { message } = req.body || {};
 
   try {
-    let chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const buffer = Buffer.concat(chunks);
-
-    const data = await pdf(buffer);
-    const text = data.text.substring(0, 15000);
-
     const completion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: `请用中文总结这份PDF（200字内）：\n${text}` }],
+      messages: [{ role: 'user', content: message || '你好' }],
       model: 'llama-3.1-70b-versatile',
+      max_tokens: 500,
     });
 
-    const summary = completion.choices[0]?.message?.content || '总结失败';
-
-    res.status(200).json({ summary, success: true });
+    const reply = completion.choices[0]?.message?.content?.trim() || '无回复';
+    res.status(200).json({ reply });
   } catch (error) {
-    console.error('API Error:', error);
-    res.status(500).json({ error: error.message || '服务器内部错误' });
+    console.error('Chat Error:', error);
+    res.status(500).json({ error: error.message || 'AI调用失败' });
   }
 };
-
-// Vercel 必需配置
-module.exports.config = {
-  api: {
-    bodyParser: false,
-    sizeLimit: '10mb'
-  }
 };
