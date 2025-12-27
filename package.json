@@ -1,8 +1,7 @@
 {
   "name": "aipdfl",
   "version": "1.0.0",
-  "description": "2025 终极真AI PDF平台 - 使用 DeepSeek 免费后端",
-  "main": "index.js",
+  "description": "2025 终极AI PDF平台 - DeepSeek免费后端",
   "dependencies": {
     "pdf-parse": "^1.1.1"
   },
