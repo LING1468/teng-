@@ -6,10 +6,10 @@
     <title>aipdfl.com - 2025 终极真AI PDF平台</title>
     <meta name="description" content="免费上传PDF，支持真AI总结、多轮聊天、语音提问、多文件管理、思维导图导出、分享聊天记录链接。">
 
-    <!-- PDF.js 预览 -->
+    <!-- PDF.js 用于第一页预览 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
 
-    <!-- markmap 思维导图 -->
+    <!-- markmap 用于交互式思维导图 -->
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script src="https://cdn.jsdelivr.net/npm/markmap-view@0.15"></script>
 
@@ -23,7 +23,7 @@
             --text: #ffffff;
         }
         body {
-            font-family: 'Inter', -apple-system, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--gradient);
             color: var(--text);
             margin: 0;
@@ -154,7 +154,7 @@
             transition: 0.4s;
         }
         .tool-card:hover { transform: translateY(-12px); }
-        .tool-card img { width: 100px; height: 100px; border-radius: 16px; margin-bottom: 16px; }
+        .tool-card img { width: 100px; height: 100px; border-radius: 16px; margin-bottom: 16px; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -193,31 +193,31 @@
             </div>
         </div>
 
-        <!-- 工具推荐区（使用可靠占位图） -->
+        <!-- 工具推荐区（使用可靠的 placehold.co 占位图） -->
         <div class="tool-grid">
             <div class="tool-card">
                 <img src="https://placehold.co/100x100/0066ff/white?text=ChatPDF&font=roboto" alt="ChatPDF">
                 <h3>ChatPDF</h3>
                 <p>经典大文件支持，精准引用页码</p>
-                <a href="https://www.chatpdf.com/" class="btn" target="_blank">立即试用</a>
+                <a href="https://www.chatpdf.com/" class="btn" target="_blank" rel="noopener">立即试用</a>
             </div>
             <div class="tool-card">
                 <img src="https://placehold.co/100x100/00aa00/white?text=PDF.ai&font=roboto" alt="PDF.ai">
                 <h3>PDF.ai</h3>
                 <p>100%免费，无限聊天</p>
-                <a href="https://pdf.ai/" class="btn" target="_blank">立即试用</a>
+                <a href="https://pdf.ai/" class="btn" target="_blank" rel="noopener">立即试用</a>
             </div>
             <div class="tool-card">
                 <img src="https://placehold.co/100x100/ff6600/white?text=LightPDF&font=roboto" alt="LightPDF">
                 <h3>LightPDF</h3>
                 <p>免费编辑 + AI聊天 + OCR</p>
-                <a href="https://lightpdf.com/" class="btn" target="_blank">立即试用</a>
+                <a href="https://lightpdf.com/" class="btn" target="_blank" rel="noopener">立即试用</a>
             </div>
             <div class="tool-card">
                 <img src="https://placehold.co/100x100/aa00ff/white?text=AskYourPDF&font=roboto" alt="AskYourPDF">
                 <h3>AskYourPDF</h3>
                 <p>专注深度问答，学术首选</p>
-                <a href="https://askyourpdf.com/" class="btn" target="_blank">立即试用</a>
+                <a href="https://askyourpdf.com/" class="btn" target="_blank" rel="noopener">立即试用</a>
             </div>
         </div>
     </div>
@@ -285,7 +285,8 @@
                     const page = await pdf.getPage(1);
                     const canvas = preview.querySelector('canvas');
                     const vp = page.getViewport({ scale: 1.5 });
-                    canvas.height = vp.height; canvas.width = vp.width;
+                    canvas.height = vp.height;
+                    canvas.width = vp.width;
                     await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
                 } else {
                     addMsg('错误', data.error || '上传失败');
@@ -351,6 +352,8 @@
                 document.getElementById('mindmap-container').style.display = 'block';
                 const { markmap } = window;
                 markmap.Markmap.create('#markmap', {}, data.markdown);
+            } else {
+                addMsg('错误', data.error || '生成失败');
             }
         }
 
@@ -366,7 +369,8 @@
                 const ctx = canvas.getContext('2d');
                 const img = new Image();
                 img.onload = () => {
-                    canvas.width = img.width; canvas.height = img.height;
+                    canvas.width = img.width;
+                    canvas.height = img.height;
                     ctx.drawImage(img, 0, 0);
                     canvas.toBlob(blob => download(blob, '思维导图.png'));
                 };
@@ -377,7 +381,9 @@
         function download(blob, name) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = name; a.click();
+            a.href = url;
+            a.download = name;
+            a.click();
         }
 
         function shareChat() {
@@ -385,17 +391,20 @@
 
             const data = btoa(unescape(encodeURIComponent(JSON.stringify(chatHistory))));
             const link = location.origin + location.pathname + '?share=' + data;
-            prompt('复制分享链接：', link);
+            prompt('复制分享链接（任何人打开即可查看聊天记录）：', link);
         }
 
-        // 恢复分享记录
+        // 页面加载时恢复分享的聊天记录
         const params = new URLSearchParams(location.search);
         if (params.has('share')) {
             try {
                 const history = JSON.parse(decodeURIComponent(escape(atob(params.get('share')))));
                 history.forEach(m => addMsg(m.sender, m.text));
-            } catch (e) {}
+            } catch (e) {
+                console.error('分享链接解析失败');
+            }
         }
     </script>
 </body>
 </html>
+
