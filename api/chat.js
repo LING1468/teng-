@@ -4,15 +4,14 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    return res.status(405).json({ error: 'Only POST' });
   }
 
   const { message } = req.body;
 
   try {
     const completion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: message }],
+      messages: [{ role: 'user', content: message || '你好' }],
       model: 'llama-3.1-70b-versatile',
     });
 
