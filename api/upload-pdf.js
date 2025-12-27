@@ -3,9 +3,9 @@ const pdf = require('pdf-parse');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Only POST' });
+    return res.status(405).json({ error: 'Only POST allowed' });
   }
 
   try {
@@ -25,12 +25,13 @@ export default async function handler(req, res) {
 
     res.status(200).json({ summary, success: true });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message || '服务器内部错误' });
   }
-}
+};
 
-export const config = {
+// Vercel 必需配置
+module.exports.config = {
   api: {
     bodyParser: false,
     sizeLimit: '10mb'
