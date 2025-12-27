@@ -1,4 +1,4 @@
-import { Groq } from 'groq-sdk';
+const { Groq } = require('groq-sdk');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Only POST' });
   }
 
-  const { message } = req.body;
+  const { message } = req.body || {};
 
   try {
     const completion = await groq.chat.completions.create({
