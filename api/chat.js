@@ -15,11 +15,11 @@ module.exports = async (req, res) => {
   try {
     const apiKey = process.env.DEEPSEEK_API_KEY;
 
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    const response = await fetch('https://tb.api.mkeai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX}`
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
@@ -44,3 +44,4 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: error.message || 'AI调用失败' });
   }
 };
+
