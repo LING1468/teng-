@@ -12,16 +12,18 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const apiKey = process.env.TB_API_KEY || '';  // ← 同样修复
+
     const response = await fetch('https://tb.api.mkeai.com/v1/chat/completions', {
       method: 'POST',
-     headers: {
-    'Content-Type': 'application/json',
-    ...(apiKey && { 'Authorization': `Bearer ${sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX}` })  // 自动添加Key
-  },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(apiKey && { 'Authorization': `Bearer ${sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX}` })
+      },
       body: JSON.stringify({
-        model: 'deepseek-chat',  // ← 换成这个
+        model: 'qwen-plus',
         messages: [
-          { role: 'system', content: '你是一个PDF内容专家，用自然中文回复。' },
+          { role: 'system', content: '你是一个PDF内容助手，用自然中文回复。' },
           { role: 'user', content: message }
         ],
         temperature: 0.7,
@@ -41,4 +43,3 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: error.message || '调用失败' });
   }
 };
-
