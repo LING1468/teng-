@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
 
   try {
     if (!process.env.DEEPSEEK_API_KEY) {
-      return res.status(500).json({ error: 'sk-fcd93f7691d24d7ca8d8e1908214179a' });
+      return res.status(500).json({ error: 'sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX' });
     }
 
     const buffers = [];
@@ -52,3 +52,4 @@ module.exports.config = {
     sizeLimit: '15mb'
   }
 };
+
