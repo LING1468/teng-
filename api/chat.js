@@ -1,3 +1,4 @@
+// api/chat.js - DeepSeek 直接 POST 请求
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
@@ -12,31 +13,34 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const response = await fetch('https://tb.api.mkeai.com', {
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX}`,
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: [
-          { role: 'system', content: '你是一个PDF内容专家，用自然中文回复。' },
+          { role: 'system', content: '你是一个PDF内容助手，用自然中文回复用户问题。' },
           { role: 'user', content: message }
         ],
         temperature: 0.7,
-        max_tokens: 800,
-      }),
+        max_tokens: 800
+      })
     });
+
+    if (!response.ok) {
+      throw new Error(`API错误 ${response.status}`);
+    }
 
     const data = await response.json();
     const reply = data.choices[0]?.message?.content?.trim() || '无回复';
 
     res.status(200).json({ reply });
   } catch (error) {
-    console.error('Error:', error);
     res.status(500).json({ error: error.message || 'AI调用失败' });
   }
 };
-
-
