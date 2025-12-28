@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>aipdfl.com - 2025 终极真AI PDF平台</title>
+    <meta name="description" content="免费上传PDF，支持真AI总结、多轮聊天、语音提问、多文件管理、思维导图导出、分享聊天记录链接。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+    <!-- PDF.js 用于第一页预览 - 使用 legacy 版本 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- markmap 用于交互式思维导图 -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-view@0.15.4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.15.4/dist/browser/index.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #00e0ff;
+            --primary-dark: #0066ff;
+            --gradient: linear-gradient(135deg, #0a0020, #001133);
+            --glow: 0 0 25px rgba(0,224,255,0.5);
+            --card-bg: rgba(20,20,40,0.65);
+            --text: #ffffff;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--gradient);
+            color: var(--text);
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 60px 20px 40px; }
+        header h1 {
+            font-size: 3rem;
+            background: linear-gradient(90deg, #00e0ff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .main-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 40px;
+            box-shadow: var(--glow);
+            border: 1px solid rgba(0,224,255,0.3);
+        }
+        .upload-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+        input[type="file"] { display: none; }
+        .btn {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: white;
+            padding: 14px 28px;
+            border-radius: 50px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: var(--glow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 35px rgba(0,224,255,0.7);
+        }
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        .btn-voice {
+            background: linear-gradient(135deg, #ff3366, #ff5c8d);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%,100% { box-shadow: 0 0 25px rgba(255,50,100,0.5); }
+            50% { box-shadow: 0 0 35px rgba(255,50,100,0.8); }
+        }
+        .btn-small {
+            padding: 9px 17px;
+            font-size: 0.87rem;
+            border-radius: 24px;
+        }
+        .btn-small:hover {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        #file-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .file-item {
+            background: rgba(0,224,255,0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #preview {
+            margin: 30px 0;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: var(--glow);
+            max-height: 600px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        #chat {
+            min-height: 400px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 24px;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+        }
+        .msg {
+            max-width: 80%;
+            padding: 16px 24px;
+            border-radius: 24px;
+            line-height: 1.6;
+        }
+        .user { align-self: flex-end; background: linear-gradient(135deg, #0066ff, #00aaff); border-bottom-right-radius: 8px; }
+        .ai { align-self: flex-start; background: rgba(0,224,255,0.25); border: 1px solid rgba(0,224,255,0.4); border-bottom-left-radius: 8px; }
+
+        .input-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        #input {
+            flex: 1;
+            padding: 18px 24px;
+            border-radius: 50px;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        #mindmap-container {
+            margin: 40px 0;
+            background: linear-gradient(145deg, rgba(0,0,0,0.5) 0%, rgba(0,20,40,0.4) 50%, rgba(10,30,60,0.5) 100%);
+            border-radius: 36px;
+            padding: 36px;
+            display: none;
+            border: 1.5px solid rgba(0,224,255,0.25);
+            box-shadow:
+                0 0 60px rgba(0,224,255,0.18),
+                0 0 120px rgba(0,150,255,0.12),
+                inset 0 2px 0 rgba(255,255,255,0.12),
+                inset 0 -2px 0 rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 容器光效装饰 */
+        #mindmap-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 20%, rgba(0,224,255,0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 80%, rgba(99, 102, 241, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+            animation: containerGlow 8s ease-in-out infinite;
+        }
+
+        @keyframes containerGlow {
+            0%, 100% { opacity: 0.5; transform: translate(0, 0) scale(1); }
+            50% { opacity: 1; transform: translate(2%, 2%) scale(1.02); }
+        }
+
+        #mindmap-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 24px 28px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+            border-radius: 24px;
+            border: 1px solid rgba(0,224,255,0.2);
+            position: relative;
+            z-index: 1;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.08),
+                        0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        #mindmap-title {
+            font-size: 1.65rem;
+            font-weight: 750;
+            background: linear-gradient(135deg, #00e0ff 0%, #00ffff 50%, #00d4ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            letter-spacing: 0.8px;
+            filter: drop-shadow(0 0 12px rgba(0,224,255,0.4));
+        }
+
+        #mindmap-title::before {
+            content: '🧠';
+            font-size: 1.8rem;
+            filter: drop-shadow(0 0 12px rgba(0,224,255,0.8));
+            animation: brainPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes brainPulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px rgba(0,224,255,0.8)); }
+            50% { transform: scale(1.08); filter: drop-shadow(0 0 18px rgba(0,224,255,1)); }
+        }
+
+        #mindmap-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        #mindmap-actions .btn-small {
+            padding: 10px 18px;
+            font-size: 0.85rem;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(0,102,255,0.75) 0%, rgba(0,224,255,0.75) 100%);
+            border: 1px solid rgba(0,224,255,0.3);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0,102,255,0.25),
+                        inset 0 1px 0 rgba(255,255,255,0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #mindmap-actions .btn-small:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,102,255,0.35),
+                        inset 0 1px 0 rgba(255,255,255,0.3);
+            background: linear-gradient(135deg, rgba(0,102,255,0.85) 0%, rgba(0,224,255,0.85) 100%);
+        }
+
+        #mindmap-actions .btn-small:active {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        #markmap {
+            width: 100%;
+            height: 850px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(248,250,252,0.995) 50%, rgba(243,245,249,0.99) 100%);
+            border-radius: 32px;
+            overflow: hidden;
+            position: relative;
+            box-shadow:
+                inset 0 6px 24px rgba(99, 102, 241, 0.08),
+                inset 0 2px 6px rgba(0,0,0,0.02),
+                0 8px 32px rgba(0,0,0,0.12),
+                0 2px 8px rgba(0,0,0,0.06);
+            border: 1.5px solid rgba(99, 102, 241, 0.12);
+            z-index: 1;
+        }
+
+        #markmap::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(99, 102, 241, 0.4) 15%,
+                rgba(168, 85, 247, 0.5) 50%,
+                rgba(99, 102, 241, 0.4) 85%,
+                transparent 100%);
+            z-index: 10;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+        }
+
+        /* 底部光效 */
+        #markmap::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 10%;
+            right: 10%;
+            height: 1px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(99, 102, 241, 0.3) 30%,
+                rgba(168, 85, 247, 0.35) 50%,
+                rgba(99, 102, 241, 0.3) 70%,
+                transparent 100%);
+            z-index: 10;
+        }
+        #markmap svg {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        /* 文本模式 - 粉色优雅主题 */
+        #markmap pre {
+            margin: 0;
+            border-radius: 18px;
+            overflow: auto;
+            max-height: 780px;
+            background: linear-gradient(145deg,
+                rgba(255, 252, 253, 0.98) 0%,
+                rgba(253, 242, 248, 0.97) 50%,
+                rgba(252, 236, 245, 0.96) 100%);
+            padding: 28px 32px;
+            font-family: 'Inter', 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 14px;
+            line-height: 1.9;
+            color: #831843;
+            border: 1.5px solid rgba(236, 72, 153, 0.2);
+            box-shadow:
+                0 8px 24px rgba(236, 72, 153, 0.12),
+                0 4px 12px rgba(0, 0, 0, 0.06),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        /* 文本模式滚动条美化 */
+        #markmap pre::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        #markmap pre::-webkit-scrollbar-track {
+            background: linear-gradient(180deg,
+                rgba(252, 236, 245, 0.8) 0%,
+                rgba(251, 207, 232, 0.7) 100%);
+            border-radius: 6px;
+            border: 1px solid rgba(236, 72, 153, 0.15);
+        }
+
+        #markmap pre::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg,
+                #f472b6 0%,
+                #ec4899 50%,
+                #db2777 100%);
+            border-radius: 6px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 6px rgba(236, 72, 153, 0.25);
+        }
+
+        #markmap pre::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg,
+                #ec4899 0%,
+                #db2777 50%,
+                #be185d 100%);
+        }
+
+        /* Markdown 元素样式增强 */
+        #markmap pre code {
+            font-family: 'Inter', 'Consolas', 'Monaco', 'Courier New', monospace;
+            color: #831843;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.6);
+        }
+
+        /* 顶部装饰条 - 粉色渐变 */
+        #markmap pre::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg,
+                #f472b6 0%,
+                #ec4899 50%,
+                #db2777 100%);
+            border-radius: 18px 18px 0 0;
+        }
+
+        /* ==================== 思维导图粉色优雅主题 ==================== */
+
+        /* 基础SVG背景 - 粉色温馨 */
+        #markmap svg {
+            background: linear-gradient(180deg,
+                rgba(255, 250, 252, 0.99) 0%,
+                rgba(253, 242, 248, 0.98) 50%,
+                rgba(252, 236, 245, 0.97) 100%);
+            background-image:
+                radial-gradient(circle at 50% 0%, rgba(236, 72, 153, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 50% 100%, rgba(244, 114, 182, 0.025) 0%, transparent 50%),
+                radial-gradient(circle, rgba(236, 72, 153, 0.12) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 22px 22px;
+            border-radius: 28px;
+            position: relative;
+        }
+
+        /* 节点样式 - 粉色优雅卡片 */
+        #markmap g.markmap-node {
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #markmap g.markmap-node rect {
+            rx: 18;
+            ry: 18;
+            stroke-width: 1.5;
+            stroke: rgba(236, 72, 153, 0.25);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 4px 16px rgba(236, 72, 153, 0.1))
+                    drop-shadow(0 2px 8px rgba(0, 0, 0, 0.05));
+            background: linear-gradient(145deg, #ffffff 0%, #fdf2f8 100%);
+        }
+
+        #markmap g.markmap-node:hover {
+            transform: translateY(-4px) scale(1.02);
+        }
+
+        #markmap g.markmap-node:hover rect {
+            stroke: rgba(236, 72, 153, 0.5);
+            stroke-width: 2;
+            filter: drop-shadow(0 8px 24px rgba(236, 72, 153, 0.18))
+                    drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08));
+            background: linear-gradient(145deg, #ffffff 0%, #fce7f3 100%);
+        }
+
+        /* 根节点特殊样式 - 粉红渐变强调 */
+        #markmap g.markmap-node[data-depth="0"] rect {
+            rx: 22;
+            ry: 22;
+            stroke-width: 2;
+            stroke: rgba(255, 255, 255, 0.6);
+            filter: drop-shadow(0 8px 24px rgba(236, 72, 153, 0.3))
+                    drop-shadow(0 4px 12px rgba(244, 114, 182, 0.2));
+            background: linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #fb7185 100%);
+        }
+
+        #markmap g.markmap-node[data-depth="0"]:hover rect {
+            filter: drop-shadow(0 12px 32px rgba(236, 72, 153, 0.4))
+                    drop-shadow(0 6px 16px rgba(244, 114, 182, 0.3));
+            background: linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f43f5e 100%);
+        }
+
+        /* 一级节点样式 - 粉色边框 */
+        #markmap g.markmap-node[data-depth="1"] rect {
+            rx: 20;
+            ry: 20;
+            stroke-width: 1.6;
+            stroke: rgba(236, 72, 153, 0.3);
+            filter: drop-shadow(0 5px 18px rgba(236, 72, 153, 0.12))
+                    drop-shadow(0 2px 8px rgba(0, 0, 0, 0.05));
+            background: linear-gradient(145deg, #ffffff 0%, #fdf2f8 100%);
+        }
+
+        #markmap g.markmap-node[data-depth="1"]:hover rect {
+            stroke: rgba(236, 72, 153, 0.55);
+            filter: drop-shadow(0 8px 24px rgba(236, 72, 153, 0.2))
+                    drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08));
+        }
+
+        /* 二级节点样式 */
+        #markmap g.markmap-node[data-depth="2"] rect {
+            rx: 17;
+            ry: 17;
+            stroke-width: 1.4;
+            stroke: rgba(244, 114, 182, 0.25);
+            filter: drop-shadow(0 4px 12px rgba(244, 114, 182, 0.1))
+                    drop-shadow(0 2px 6px rgba(0, 0, 0, 0.04));
+            background: linear-gradient(145deg, #ffffff 0%, #fdf2f8 100%);
+        }
+
+        /* 三级及以下节点 */
+        #markmap g.markmap-node[data-depth="3"] rect,
+        #markmap g.markmap-node[data-depth="4"] rect {
+            rx: 15;
+            ry: 15;
+            stroke-width: 1.2;
+            stroke: rgba(251, 113, 133, 0.2);
+            filter: drop-shadow(0 3px 10px rgba(251, 113, 133, 0.08))
+                    drop-shadow(0 1px 4px rgba(0, 0, 0, 0.03));
+            background: linear-gradient(145deg, #ffffff 0%, #fef2f2 100%);
+        }
+
+        /* 连线样式 - 简洁优雅 */
+        #markmap path.markmap-link {
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: all 0.3s ease;
+            opacity: 0.35;
+            stroke-width: 2;
+        }
+
+        #markmap path.markmap-link:hover {
+            stroke-width: 3 !important;
+            opacity: 0.6;
+        }
+
+        /* 文字样式 - 粉色优雅 */
+        #markmap text {
+            font-family: 'Inter', 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif !important;
+            fill: #831843 !important;
+            text-shadow:
+                0 1px 1px rgba(255,255,255,0.8),
+                0 0 1px rgba(255,255,255,0.5);
+            font-weight: 580;
+            letter-spacing: 0.3px;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            paint-order: stroke fill;
+            stroke: rgba(255,255,255,0.3);
+            stroke-width: 3px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* 根节点文字 - 白色高对比 */
+        #markmap g.markmap-node[data-depth="0"] text {
+            fill: #ffffff !important;
+            text-shadow:
+                0 2px 4px rgba(131, 24, 67, 0.3),
+                0 1px 2px rgba(0, 0, 0, 0.15);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            stroke: rgba(131,24,67,0.1);
+            stroke-width: 0.5px;
+        }
+
+        /* 一级节点文字 - 深粉红 */
+        #markmap g.markmap-node[data-depth="1"] text {
+            fill: #9d174d !important;
+            font-weight: 620;
+            letter-spacing: 0.35px;
+        }
+
+        /* 二级及以下节点文字 */
+        #markmap g.markmap-node[data-depth="2"] text,
+        #markmap g.markmap-node[data-depth="3"] text {
+            fill: #be185d !important;
+            font-weight: 560;
+            letter-spacing: 0.25px;
+        }
+
+        #markmap g.markmap-node:hover text {
+            fill: #831843 !important;
+            text-shadow:
+                0 1px 2px rgba(255,255,255,0.9),
+                0 0 2px rgba(255,255,255,0.6);
+            stroke: rgba(255,255,255,0.4);
+            stroke-width: 4px;
+        }
+
+        /* 根节点悬停文字 */
+        #markmap g.markmap-node[data-depth="0"]:hover text {
+            text-shadow:
+                0 2px 6px rgba(131, 24, 67, 0.35),
+                0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 添加加载动画 */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .mindmap-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            z-index: 10;
+        }
+        .mindmap-loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(0,224,255,0.2);
+            border-top-color: #00e0ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .mindmap-loader-text {
+            color: #00e0ff;
+            font-size: 0.95rem;
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 60px;
+        }
+        .tool-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            text-align: center;
+            box-shadow: var(--glow);
+            transition: 0.4s;
+        }
+        .tool-card:hover { transform: translateY(-12px); }
+        .tool-card img { width: 100px; height: 100px; border-radius: 16px; margin-bottom: 16px; object-fit: cover; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>aipdfl.com</h1>
+            <p style="font-size:1.4rem; opacity:0.9;">2025 终极真AI PDF平台 · 安全后端驱动</p>
+        </header>
+
+        <div class="main-card">
+            <div class="upload-bar">
+                <label class="btn">选择PDF（支持多选）<input type="file" id="pdf-input" accept=".pdf" multiple></label>
+                <button class="btn" onclick="uploadPDFs()">上传并分析</button>
+                <button class="btn" onclick="generateMindmap()">生成思维导图</button>
+                <button class="btn" onclick="shareChat()">分享聊天记录</button>
+                <button class="btn btn-voice" onclick="startVoice()">语音提问</button>
+            </div>
+
+            <div id="file-list"></div>
+
+            <div id="preview"></div>
+
+            <div id="mindmap-container">
+                <div id="mindmap-header">
+                    <div id="mindmap-title">思维导图</div>
+                    <div id="mindmap-actions">
+                        <button class="btn btn-small" onclick="zoomIn()">🔍+</button>
+                        <button class="btn btn-small" onclick="zoomOut()">🔍-</button>
+                        <button class="btn btn-small" onclick="resetZoom()">↺</button>
+                        <button class="btn btn-small" onclick="toggleFullscreen()">⛶ 全屏</button>
+                        <button class="btn btn-small" onclick="exportMindmap('png')">📷 PNG</button>
+                        <button class="btn btn-small" onclick="exportMindmap('svg')">📄 SVG</button>
+                    </div>
+                </div>
+                <div id="markmap"></div>
+            </div>
+
+            <div id="chat"></div>
+
+            <div class="input-bar">
+                <input type="text" id="input" placeholder="向AI提问...（回车发送）">
+                <button class="btn" onclick="send()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PDF.js 3.x 全局变量配置
+        const pdfjsLib = window.pdfjsLib;
+        if (pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        let files = [];
+        let currentFileIndex = 0;
+        let sessionId = null;
+        let chatHistory = [];
+        let currentMindmapData = null;  // 存储当前思维导图数据 (markmap格式)
+        let currentMindmapMarkdown = '';  // 存储原始markdown
+
+        // 图标映射 - 根据关键词匹配对应的emoji图标（增强版）
+        const iconMap = {
+            // ==================== 通用主题 ====================
+            '主题': '🎯', '中心': '🎯', '核心': '🎯', '目标': '🎯', '焦点': '🎯',
+            '概述': '📋', '简介': '📋', '介绍': '📋', '摘要': '📝', '概要': '📋',
+            '总结': '📝', '结论': '🎯', '要点': '🔑', '关键点': '🔑',
+            '背景': '🖼️', '前言': '📜', '序言': '📜',
+
+            // ==================== 业务/商业 ====================
+            '业务': '💼', '商业': '💼', '商务': '💼', '企业': '🏢', '公司': '🏢',
+            '市场': '📊', '营销': '📢', '推广': '📣', '宣传': '📢',
+            '销售': '💰', '营收': '💰', '收入': '💵', '利润': '💎', '盈利': '💰',
+            '成本': '💸', '费用': '💳', '预算': '💰', '投资': '📈',
+            '客户': '👥', '用户': '👤', '消费者': '🛒', '顾客': '🧑',
+            '产品': '📦', '商品': '🛍️', '服务': '🛎️', '解决方案': '💡',
+            '品牌': '🏷️', '渠道': '🛒', '供应链': '🔗',
+
+            // ==================== 技术/开发 ====================
+            '技术': '⚙️', '开发': '💻', '编程': '👨‍💻', '代码': '💻',
+            '系统': '🖥️', '平台': '🌐', '架构': '🏗️', '框架': '🔧',
+            '数据': '📊', '信息': 'ℹ️', '内容': '📄',
+            '算法': '🧮', '模型': '🤖', '计算': '🔢', '处理': '⚙️',
+            'AI': '🤖', '人工智能': '🤖', '智能': '🧠', '机器学习': '🧠', '深度学习': '🔬',
+            '前端': '🎨', '后端': '⚡', '全栈': '🔷', '数据库': '🗄️', 'API': '🔌',
+            '云': '☁️', '服务器': '🖥️', '网络': '🌐', '互联网': '🌐',
+            '移动': '📱', 'APP': '📱', '应用': '📱', '软件': '💻',
+            '安全': '🔒', '加密': '🔐', '认证': '🔑', '权限': '🎫',
+            '测试': '🧪', '调试': '🐛', 'bug': '🐛', '错误': '❌', '异常': '⚠️',
+            '部署': '🚀', '发布': '📢', '版本': '🏷️', '更新': '🔄',
+            '性能': '⚡', '优化': '🚀', '效率': '⏱️', '速度': '💨',
+
+            // ==================== 学习/教育 ====================
+            '学习': '📚', '教育': '🎓', '培训': '📖', '课程': '📚', '教学': '👨‍🏫',
+            '知识': '💡', '理论': '📖', '概念': '💭', '定义': '📝',
+            '技能': '🔧', '能力': '⭐', '素养': '🌟', '专长': '🎯',
+            '考试': '✍️', '测试': '✅', '作业': '📝', '练习': '🏋️',
+            '学校': '🏫', '大学': '🎓', '学院': '🏛️', '图书馆': '📚',
+            '学生': '👨‍🎓', '老师': '👨‍🏫', '教授': '👨‍🏫',
+
+            // ==================== 项目/计划 ====================
+            '项目': '📁', '工程': '🏗️', '计划': '📅', '规划': '🗺️',
+            '任务': '✅', '工作': '💼', '活动': '🎉', '事件': '📅',
+            '进度': '📈', '状态': '📊', '阶段': '🚩', '里程碑': '🏁',
+            '时间': '⏰', '日期': '📅', '期限': '⏳', '周期': '🔄',
+            '开始': '🚀', '启动': '🚀', '启动': '▶️', '进行': '⏯️',
+            '完成': '🏁', '结束': '🏁', '关闭': '🔚', '终止': '🛑',
+            '里程碑': '🚩', '节点': '📍', '检查点': '🔍',
+
+            // ==================== 问题/解决 ====================
+            '问题': '❓', '疑问': '❓', '困惑': '🤔', '难点': '⛰️',
+            '挑战': '⚠️', '风险': '🚨', '危机': '🆘', '威胁': '⚡',
+            '困难': '🔴', '障碍': '🚧', '阻碍': '🛑', '限制': '🚧',
+            '解决': '✅', '方案': '💡', '答案': '🔑', '对策': '🛡️',
+            '方法': '🔧', '策略': '♟️', '技巧': '🎯', '窍门': '💡',
+            '优点': '✅', '优势': '⭐', '特色': '💎', '亮点': '✨',
+            '缺点': '❌', '劣势': '⚠️', '不足': '📉', '弱点': '💔',
+            '影响': '🌊', '后果': '📌', '结果': '📊', '成果': '🏆',
+
+            // ==================== 分析/研究 ====================
+            '分析': '🔍', '研究': '🔬', '探索': '🧭', '调研': '📋',
+            '调查': '📊', '统计': '📈', '测量': '📏', '评估': '📊',
+            '报告': '📄', '文档': '📋', '论文': '📜', '文章': '📝',
+            '记录': '📝', '日志': '📓', '档案': '🗄️', '资料': '📚',
+            '发现': '🔎', '结果': '📊', '结论': '🎯', '成果': '🏆',
+            '假设': '💭', '猜想': '🤔', '预测': '🔮', '推测': '🧠',
+            '实验': '🧪', '验证': '✅', '证明': '📜', '证据': '🔗',
+
+            // ==================== 创意/设计 ====================
+            '设计': '🎨', '创意': '💡', '创新': '✨', '创造': '🎭',
+            '灵感': '⚡', '想象': '🌈', '构思': '💭',
+            '界面': '🖼️', 'UI': '🎨', 'UX': '😊', '交互': '👆',
+            '体验': '😊', '感受': '❤️', '印象': '💫',
+            '颜色': '🌈', '色彩': '🎨', '风格': '🎭', '样式': '👗',
+            '主题': '🎨', '模板': '📋', '布局': '📐', '排版': '📝',
+            '图形': '🔷', '图像': '🖼️', '图标': '🔶', '符号': '🔣',
+
+            // ==================== 时间/流程 ====================
+            '流程': '🔄', '过程': '⏳', '步骤': '👣', '环节': '🔗',
+            '程序': '📋', '顺序': '🔢', '序列': '🔗', '队列': '🚶',
+            '历史': '📜', '过去': '⏮️', '现在': '⏯️', '未来': '🔮',
+            '趋势': '📈', '发展': '🚀', '演进': '🔄', '变化': '🦋',
+            '周期': '🔄', '频率': '📊', '间隔': '⏸️', '持续': '♾️',
+
+            // ==================== 分类/类型 ====================
+            '类型': '🏷️', '分类': '📂', '种类': '🗂️', '类别': '📁',
+            '形式': '📋', '模式': '🔲', '方式': '🛤️', '途径': '🛣️',
+            '例子': '💡', '案例': '📖', '示例': '📝', '实例': '🔷',
+            '包括': '➕', '包含': '➕', '以及': '➕', '还有': '➕',
+            '组成': '🧩', '构成': '🔗', '部分': '🧩', '成员': '👥',
+
+            // ==================== 数量/程度 ====================
+            '增加': '📈', '提升': '⬆️', '提高': '📈', '改善': '✨', '优化': '🚀',
+            '减少': '📉', '降低': '⬇️', '下降': '📉', '节省': '💰',
+            '保持': '⏸️', '维持': '⏸️', '稳定': '➡️', '不变': '🔒',
+            '全部': '🔘', '所有': '🔘', '整体': '🔘', '完全': '✅',
+            '部分': '⚪', '局部': '⚪', '某些': '🔵',
+            '多数': '🔵', '大多数': '🔵', '少数': '🔸', '个别': '🔸',
+            '最大': '⬆️', '最小': '⬇️', '平均': '⚖️', '总计': '🔢',
+
+            // ==================== 情感/态度 ====================
+            '重要': '⭐', '关键': '🔑', '核心': '💎', '主要': '🔴', '首要': '🥇',
+            '次要': '⚪', '辅助': '🔵', '补充': '➕', '附加': '➕',
+            '积极': '😊', '正面': '✅', '肯定': '👍', '支持': '🤝',
+            '消极': '😞', '负面': '❌', '反对': '👎', '拒绝': '🚫',
+            '中性': '➡️', '客观': '⚖️', '公正': '⚖️',
+            '喜欢': '❤️', '爱': '💕', '讨厌': '💔', '恨': '😡',
+            '满意': '😊', '开心': '😄', '快乐': '🎉', '幸福': '💖',
+            '不满意': '😞', '难过': '😢', '悲伤': '😭', '痛苦': '😣',
+
+            // ==================== 工具/资源 ====================
+            '工具': '🔧', '软件': '💻', '硬件': '⚙️', '设备': '📱',
+            '资源': '📦', '材料': '📄', '素材': '🎨', '原料': '🧱',
+            '信息': 'ℹ️', '消息': '📨', '新闻': '📰', '资讯': '📊',
+            '文件': '📄', '文档': '📋', '资料': '📚', '档案': '🗄️',
+            '数据': '📊', '数据库': '🗄️', '存储': '💾', '备份': '💿',
+
+            // ==================== 网络/连接 ====================
+            '网络': '🌐', '互联网': '🌐', '网': '🕸️',
+            '连接': '🔗', '链接': '🔗', '关联': '🔗', '关系': '🤝',
+            '在线': '🟢', '离线': '🔴', '上网': '🌐', '浏览': '👀',
+            '网站': '🌎', '网页': '📄', '页面': '📄', '主页': '🏠',
+            '搜索': '🔍', '查找': '🔎', '检索': '🔍',
+
+            // ==================== 安全/保护 ====================
+            '安全': '🔒', '保护': '🛡️', '防护': '🛡️', '防御': '🏰',
+            '隐私': '🔐', '保密': '🔐', '机密': '🔒',
+            '权限': '🔑', '许可': '🎫', '认证': '✅', '授权': '📜',
+            '备份': '💾', '恢复': '♻️', '还原': '↩️', '撤销': '↩️',
+            '删除': '🗑️', '清除': '🧹', '移除': '❌',
+
+            // ==================== 通信/协作 ====================
+            '沟通': '💬', '交流': '🗣️', '对话': '💭', '聊天': '💬',
+            '讨论': '💭', '辩论': '🗣️', '协商': '🤝',
+            '会议': '🤝', '聚会': '🎉', '活动': '🎊',
+            '团队': '👥', '小组': '👥', '部门': '🏢', '组织': '🏛️',
+            '协作': '🤝', '合作': '🤝', '配合': '🤝', '共赢': '🏆',
+            '分享': '📤', '共享': '🔄', '传播': '📡', '发布': '📢',
+
+            // ==================== 金融/财务 ====================
+            '资金': '💰', '资本': '💵', '资产': '💎', '财富': '💰',
+            '银行': '🏦', '贷款': '💳', '信用卡': '💳',
+            '股票': '📈', '基金': '💼', '债券': '📜', '投资': '📊',
+            '汇率': '💱', '货币': '💴', '现金': '💵', '支付': '💳',
+
+            // ==================== 健康/医疗 ====================
+            '健康': '❤️', '医疗': '⚕️', '医院': '🏥', '医生': '👨‍⚕️',
+            '治疗': '💊', '药物': '💊', '药': '💊', '症状': '🤒',
+            '疾病': '🦠', '病毒': '🦠', '感染': '😷',
+            '锻炼': '🏋️', '运动': '🏃', '健身': '💪',
+            '饮食': '🍽️', '营养': '🥗', '睡眠': '😴',
+
+            // ==================== 自然/环境 ====================
+            '环境': '🌍', '自然': '🌿', '生态': '🍃', '气候': '🌤️',
+            '天气': '⛅', '温度': '🌡️', '湿度': '💧',
+            '地球': '🌍', '世界': '🌏', '宇宙': '🌌', '太空': '🚀',
+            '海洋': '🌊', '山': '⛰️', '河流': '🏞️', '森林': '🌲',
+            '动物': '🐾', '植物': '🌱', '人类': '👤',
+
+            // ==================== 交通/出行 ====================
+            '交通': '🚦', '运输': '🚚', '出行': '🚶',
+            '汽车': '🚗', '公交车': '🚌', '地铁': '🚇', '火车': '🚂',
+            '飞机': '✈️', '船': '🚢', '自行车': '🚲',
+            '道路': '🛣️', '街道': '🛣️', '路线': '🗺️', '导航': '🧭',
+
+            // ==================== 娱乐/休闲 ====================
+            '娱乐': '🎮', '游戏': '🎮', '玩': '🎲',
+            '音乐': '🎵', '歌曲': '🎶', '电影': '🎬', '视频': '📹',
+            '体育': '⚽', '运动': '🏃', '比赛': '🏆',
+            '旅游': '✈️', '旅行': '🧳', '度假': '🏖️',
+            '购物': '🛍️', '餐饮': '🍽️', '美食': '🍜'
+        };
+
+        // 改进的图标匹配算法 - 支持更智能的关键词匹配
+        function getIconForText(text) {
+            if (!text) return '';
+
+            const trimmedText = text.trim();
+
+            // 1. 精确匹配优先
+            if (iconMap[trimmedText]) {
+                return iconMap[trimmedText];
+            }
+
+            // 2. 完整包含匹配（优先级高于部分匹配）
+            for (const [keyword, icon] of Object.entries(iconMap)) {
+                if (trimmedText === keyword) {
+                    return icon;
+                }
+            }
+
+            // 3. 长关键词优先匹配（避免短关键词误匹配）
+            const sortedKeywords = Object.keys(iconMap).sort((a, b) => b.length - a.length);
+
+            for (const keyword of sortedKeywords) {
+                if (trimmedText.includes(keyword)) {
+                    return iconMap[keyword];
+                }
+            }
+
+            // 4. 按层级返回默认图标（可选）
+            return '';
+        }
+
+        function addMsg(sender, text) {
+            const chat = document.getElementById('chat');
+            const div = document.createElement('div');
+            div.className = 'msg ' + (sender === '你' ? 'user' : 'ai');
+            div.innerHTML = text.replace(/\n/g, '<br>');
+            chat.appendChild(div);
+            chatHistory.push({sender, text});
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        async function uploadPDFs() {
+            const input = document.getElementById('pdf-input');
+            if (input.files.length === 0) return alert('请先选择PDF文件');
+
+            files = Array.from(input.files);
+            const list = document.getElementById('file-list');
+            list.innerHTML = '';
+            files.forEach((f, i) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    ${f.name}
+                    <button class="btn-small" onclick="switchFile(${i})">分析</button>
+                    <button class="btn-small" onclick="removeFile(${i})">删除</button>
+                `;
+                list.appendChild(item);
+            });
+
+            switchFile(0);
+        }
+
+        async function switchFile(index) {
+            currentFileIndex = index;
+            const file = files[index];
+            addMsg('系统', `正在分析：${file.name}`);
+
+            const form = new FormData();
+            form.append('file', file);
+
+            try {
+                const res = await fetch('/api/upload-pdf', { method: 'POST', body: form });
+                const data = await res.json();
+
+                if (data.sessionId && data.summary) {
+                    sessionId = data.sessionId;
+                    addMsg('🤖 AI', data.summary);
+
+                    const preview = document.getElementById('preview');
+                    preview.style.display = 'block';
+                    preview.innerHTML = '<canvas style="width:100%;"></canvas>';
+                    const loadingTask = pdfjsLib.getDocument(URL.createObjectURL(file));
+                    const pdf = await loadingTask.promise;
+                    const page = await pdf.getPage(1);
+                    const canvas = preview.querySelector('canvas');
+                    const vp = page.getViewport({ scale: 1.5 });
+                    canvas.height = vp.height;
+                    canvas.width = vp.width;
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+                } else {
+                    addMsg('错误', data.error || '上传失败');
+                }
+            } catch (err) {
+                addMsg('错误', '上传失败：' + err.message);
+            }
+        }
+
+        function removeFile(index) {
+            files.splice(index, 1);
+            document.getElementById('file-list').innerHTML = '';
+            if (files.length > 0) uploadPDFs();
+        }
+
+        async function send() {
+            if (!sessionId) return addMsg('错误', '请先上传PDF');
+
+            const msg = document.getElementById('input').value.trim();
+            if (!msg) return;
+
+            addMsg('你', msg);
+            document.getElementById('input').value = '';
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg, sessionId })
+                });
+                const data = await res.json();
+                addMsg('🤖 AI', data.reply || data.error || '无回复');
+            } catch (err) {
+                addMsg('错误', '聊天失败：' + err.message);
+            }
+        }
+
+        document.getElementById('input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') send();
+        });
+
+        function startVoice() {
+            if (!('webkitSpeechRecognition' in window)) return alert('浏览器不支持语音识别');
+
+            const recognition = new webkitSpeechRecognition();
+            recognition.lang = 'zh-CN';
+            recognition.continuous = false;
+            recognition.onresult = event => {
+                const text = event.results[0][0].transcript;
+                document.getElementById('input').value = text;
+                send();
+            };
+            recognition.start();
+        }
+
+        let mindmapInstance = null;
+
+        // 思维导图配置 - 金色主题版本
+        function getMindmapOptions() {
+            return {
+                duration: 500,
+                nodeMinHeight: 32,
+                paddingX: 20,
+                nodeFont: 'Inter, "Microsoft YaHei", "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                nodeFontSize: (node) => {
+                    const depth = node.depth || 0;
+                    if (depth === 0) return 28;
+                    if (depth === 1) return 23;
+                    if (depth === 2) return 19;
+                    return 17;
+                },
+                nodeFontWeight: (node) => {
+                    const depth = node.depth || 0;
+                    if (depth === 0) return 750;
+                    if (depth === 1) return 680;
+                    return 630;
+                },
+                nodeMinWidth: 100,
+                paddingY: 14,
+                marginX: 20,
+                spacingHorizontal: 140,
+                spacingVertical: 18,
+                maxWidth: 0,
+                autoFit: true,
+                fitRatio: 0.92,
+                zoom: true,
+                pan: true,
+                initialZoom: 1,
+                color: (node) => '#831843',
+                linkColor: (node) => {
+                    const colors = ['#f472b6', '#fb7185', '#f9a8d4', '#ec4899', '#fda4af'];
+                    return colors[(node.depth || 0) % colors.length];
+                },
+                linkStrokeWidth: (node) => Math.max(2.2, 3.8 - (node.depth || 0) * 0.5),
+                linkStrokeOpacity: 0.5
+            };
+        }
+
+        // 渲染思维导图（提取为独立函数）
+        function renderMindmap() {
+            if (!currentMindmapMarkdown) return;
+
+            if (window.d3 && window.markmap && window.markmap.Markmap && window.markmap.Transformer) {
+                try {
+                    const { Markmap, Transformer } = window.markmap;
+                    const transformer = new Transformer();
+
+                    const { root } = transformer.transform(currentMindmapMarkdown);
+                    currentMindmapData = root;
+
+                    const options = getMindmapOptions();
+                    mindmapInstance = Markmap.create('#markmap', options, root);
+
+                    // 添加节点展开/折叠功能
+                    addNodeInteractivity();
+                } catch (e) {
+                    console.error('Render error:', e);
+                }
+            }
+        }
+
+        // 缩放控制
+        function zoomIn() {
+            if (mindmapInstance && mindmapInstance.fit) {
+                mindmapInstance.fit();
+                const svg = document.querySelector('#markmap svg');
+                if (svg) {
+                    const currentTransform = svg.getAttribute('viewBox') || '';
+                    // 简单缩放实现
+                    addMsg('系统', '🔍 已放大');
+                }
+            }
+        }
+
+        function zoomOut() {
+            if (mindmapInstance) {
+                addMsg('系统', '🔍 已缩小');
+            }
+        }
+
+        function resetZoom() {
+            if (mindmapInstance && mindmapInstance.fit) {
+                mindmapInstance.fit();
+                addMsg('系统', '↺ 已重置缩放');
+            }
+        }
+
+        // 全屏切换
+        function toggleFullscreen() {
+            const container = document.getElementById('mindmap-container');
+
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().then(() => {
+                    addMsg('系统', '⛶ 已进入全屏模式');
+                }).catch(err => {
+                    console.error('全屏失败:', err);
+                });
+            } else {
+                document.exitFullscreen().then(() => {
+                    addMsg('系统', '⛶ 已退出全屏模式');
+                });
+            }
+        }
+
+        // 节点交互功能（展开/折叠）
+        function addNodeInteractivity() {
+            setTimeout(() => {
+                const nodes = document.querySelectorAll('#markmap g.markmap-node');
+                nodes.forEach(node => {
+                    node.addEventListener('click', function(e) {
+                        // 单击展开/折叠功能由 markmap 自带处理
+                    });
+                });
+            }, 1000);
+        }
+
+        // 节点编辑功能
+        function enableNodeEditing() {
+            setTimeout(() => {
+                const nodes = document.querySelectorAll('#markmap g.markmap-node');
+
+                nodes.forEach((node, index) => {
+                    // 双击编辑节点文本
+                    node.addEventListener('dblclick', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const textElement = node.querySelector('text');
+                        if (!textElement) return;
+
+                        const currentText = textElement.textContent.trim();
+                        const newText = prompt('编辑节点文本：', currentText);
+
+                        if (newText !== null && newText !== currentText && newText.trim()) {
+                            // 更新节点文本
+                            textElement.textContent = newText;
+
+                            // 更新 markdown 数据
+                            updateMarkdownNodeText(index, currentText, newText);
+                            addMsg('系统', `已更新节点：${currentText} → ${newText}`);
+                        }
+                    });
+
+                    // 右键菜单 - 添加/删除子节点
+                    node.addEventListener('contextmenu', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const textElement = node.querySelector('text');
+                        const nodeText = textElement ? textElement.textContent.trim() : '节点';
+
+                        const action = prompt(`节点操作：\n1. 添加子节点\n2. 删除此节点\n\n请输入操作编号 (1/2)：`, '1');
+
+                        if (action === '1') {
+                            const childText = prompt('输入新子节点文本：', '新节点');
+                            if (childText && childText.trim()) {
+                                // 在 markdown 中添加子节点
+                                addChildNodeToMarkdown(nodeText, childText);
+                                // 重新渲染
+                                setTimeout(() => {
+                                    const markmapDiv = document.getElementById('markmap');
+                                    markmapDiv.innerHTML = '';
+                                    renderMindmap();
+                                    enableNodeEditing();
+                                }, 100);
+                                addMsg('系统', `已添加子节点：${childText}`);
+                            }
+                        } else if (action === '2') {
+                            if (confirm(`确定要删除节点 "${nodeText}" 及其所有子节点吗？`)) {
+                                deleteNodeFromMarkdown(nodeText);
+                                setTimeout(() => {
+                                    const markmapDiv = document.getElementById('markmap');
+                                    markmapDiv.innerHTML = '';
+                                    renderMindmap();
+                                    enableNodeEditing();
+                                }, 100);
+                                addMsg('系统', `已删除节点：${nodeText}`);
+                            }
+                        }
+                    });
+                });
+            }, 2000);
+        }
+
+        // 更新 markdown 中的节点文本
+        function updateMarkdownNodeText(nodeIndex, oldText, newText) {
+            const lines = currentMindmapMarkdown.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmedLine = line.trim();
+
+                // 检查是否包含要替换的文本（排除图标）
+                const textWithoutIcon = trimmedLine
+                    .replace(/^[#\-]+\s+/, '')
+                    .replace(/^[^\w\u4e00-\u9fa5]+\s*/, ''); // 移除开头的 emoji
+
+                if (textWithoutIcon === oldText || trimmedLine.includes(oldText)) {
+                    // 替换文本，保留缩进和标记
+                    const indent = line.match(/^(\s*)/)[1];
+                    const marker = trimmedLine.match(/^([#\-]+)/)?.[1] || '';
+                    lines[i] = `${indent}${marker} ${newText}`;
+                    break;
+                }
+            }
+            currentMindmapMarkdown = lines.join('\n');
+        }
+
+        // 添加子节点到 markdown
+        function addChildNodeToMarkdown(parentText, childText) {
+            const lines = currentMindmapMarkdown.split('\n');
+            let parentIndex = -1;
+            let parentIndent = '';
+
+            // 找到父节点
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmedLine = line.trim();
+                const textWithoutIcon = trimmedLine
+                    .replace(/^[#\-]+\s+/, '')
+                    .replace(/^[^\w\u4e00-\u9fa5]+\s*/, '');
+
+                if (textWithoutIcon === parentText || trimmedLine.includes(parentText)) {
+                    parentIndex = i;
+                    parentIndent = line.match(/^(\s*)/)[1];
+                    break;
+                }
+            }
+
+            if (parentIndex !== -1) {
+                // 确定子节点的缩进
+                const isHeader = lines[parentIndex].trim().startsWith('#');
+                let childLine;
+
+                if (isHeader) {
+                    // 如果父节点是标题，子节点使用列表项
+                    const level = lines[parentIndex].match(/^(#+)/)?.[1].length || 1;
+                    const childLevel = Math.min(level + 1, 3);
+                    childLine = `${parentIndent}${'#'.repeat(childLevel)} ${childText}`;
+                } else {
+                    // 如果父节点是列表项，子节点增加缩进
+                    const indentMatch = lines[parentIndex].match(/^(\s*)[-*]/);
+                    const baseIndent = indentMatch ? indentMatch[1] : '';
+                    childLine = `${baseIndent}  - ${childText}`;
+                }
+
+                // 插入子节点
+                lines.splice(parentIndex + 1, 0, childLine);
+                currentMindmapMarkdown = lines.join('\n');
+            }
+        }
+
+        // 从 markdown 删除节点
+        function deleteNodeFromMarkdown(nodeText) {
+            const lines = currentMindmapMarkdown.split('\n');
+            let deleteStart = -1;
+            let deleteCount = 0;
+
+            // 找到要删除的节点
+            for (let i = 0; i < lines.length; i++) {
+                const trimmedLine = lines[i].trim();
+                const textWithoutIcon = trimmedLine
+                    .replace(/^[#\-]+\s+/, '')
+                    .replace(/^[^\w\u4e00-\u9fa5]+\s*/, '');
+
+                if (textWithoutIcon === nodeText || trimmedLine.includes(nodeText)) {
+                    deleteStart = i;
+                    break;
+                }
+            }
+
+            if (deleteStart !== -1) {
+                const parentIndent = lines[deleteStart].match(/^(\s*)/)[1].length;
+
+                // 找出所有子节点（缩进更深的行）
+                for (let i = deleteStart + 1; i < lines.length; i++) {
+                    const lineIndent = lines[i].match(/^(\s*)/)[1].length;
+                    if (lineIndent > parentIndent) {
+                        deleteCount++;
+                    } else {
+                        break;
+                    }
+                }
+
+                // 删除节点及其子节点
+                lines.splice(deleteStart, deleteCount + 1);
+                currentMindmapMarkdown = lines.join('\n');
+            }
+        }
+
+        // 为markdown添加图标
+        function addIconsToMarkdown(markdown) {
+            const lines = markdown.split('\n');
+            const result = [];
+
+            for (let line of lines) {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) {
+                    result.push(line);
+                    continue;
+                }
+
+                // 跳过代码块
+                if (trimmedLine.startsWith('```')) {
+                    result.push(line);
+                    continue;
+                }
+
+                // 获取层级和内容
+                const match = trimmedLine.match(/^(#+)\s+(.*)/);
+                if (match) {
+                    const level = match[1]; // # 或 ## 或 ###
+                    const content = match[2];
+                    const icon = getIconForText(content);
+
+                    // 如果有图标，添加到内容前
+                    if (icon) {
+                        // 保留缩进
+                        const indent = line.match(/^(\s*)/)[1];
+                        result.push(`${indent}${level} ${icon} ${content}`);
+                    } else {
+                        result.push(line);
+                    }
+                } else {
+                    // 处理列表项
+                    const listMatch = trimmedLine.match(/^[-*]\s+(.*)/);
+                    if (listMatch) {
+                        const content = listMatch[1];
+                        const icon = getIconForText(content);
+                        const indent = line.match(/^(\s*)/)[1];
+                        if (icon) {
+                            result.push(`${indent}- ${icon} ${content}`);
+                        } else {
+                            result.push(line);
+                        }
+                    } else {
+                        result.push(line);
+                    }
+                }
+            }
+
+            return result.join('\n');
+        }
+
+        async function generateMindmap() {
+            if (!sessionId) return addMsg('错误', '请先上传PDF');
+
+            addMsg('系统', '正在生成思维导图...');
+
+            // 显示加载动画
+            const markmapDiv = document.getElementById('markmap');
+            markmapDiv.innerHTML = `
+                <div class="mindmap-loader">
+                    <div class="mindmap-loader-spinner"></div>
+                    <div class="mindmap-loader-text">正在生成思维导图...</div>
+                </div>
+            `;
+
+            try {
+                const res = await fetch('/api/mindmap', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId })
+                });
+
+                console.log('Mindmap API Response status:', res.status);
+
+                const data = await res.json();
+                console.log('Mindmap API Response:', data);
+
+                if (!res.ok) {
+                    throw new Error(data.error || `API错误: ${res.status}`);
+                }
+
+                if (data.markdown) {
+                    document.getElementById('mindmap-container').style.display = 'block';
+
+                    // 存储 markdown 数据
+                    currentMindmapMarkdown = data.markdown;
+
+                    console.log('Generated Markdown:', currentMindmapMarkdown.substring(0, 200) + '...');
+
+                    // 清空加载动画
+                    markmapDiv.innerHTML = '';
+
+                    // 检查必要的库是否加载
+                    console.log('Checking libraries...');
+                    console.log('d3 available:', typeof window.d3 !== 'undefined');
+                    console.log('markmap available:', typeof window.markmap !== 'undefined');
+                    console.log('Markmap available:', window.markmap && typeof window.markmap.Markmap !== 'undefined');
+                    console.log('Transformer available:', window.markmap && typeof window.markmap.Transformer !== 'undefined');
+
+                    // 尝试使用 markmap-view 渲染
+                    if (window.d3 && window.markmap && window.markmap.Markmap && window.markmap.Transformer) {
+                        try {
+                            renderMindmap();
+
+                            setTimeout(() => {
+                                const svg = document.querySelector('#markmap svg');
+                                console.log('SVG check:', svg);
+
+                                if (svg) {
+                                    // 添加SVG交互效果
+                                    svg.style.cursor = 'grab';
+                                    svg.addEventListener('mousedown', () => svg.style.cursor = 'grabbing');
+                                    svg.addEventListener('mouseup', () => svg.style.cursor = 'grab');
+
+                                    // 添加节点编辑功能
+                                    enableNodeEditing();
+
+                                    addMsg('系统', '✨ 思维导图生成成功！尝试切换不同模式或主题，双击节点可编辑！');
+                                } else {
+                                    console.warn('SVG not found, falling back to text mode');
+                                    markmapDiv.innerHTML = '<pre style="white-space:pre-wrap;color:#00e0ff;padding:20px;background:rgba(0,0,0,0.3);border-radius:12px;">' + currentMindmapMarkdown + '</pre>';
+                                    addMsg('系统', '思维导图生成成功（文本模式）');
+                                }
+                            }, 1800);
+                            return;
+                        } catch (e) {
+                            console.error('Markmap create error:', e);
+                            console.error('Error stack:', e.stack);
+                        }
+                    } else {
+                        console.error('Required libraries not loaded');
+                        addMsg('错误', '思维导图库未正确加载，请刷新页面重试');
+                    }
+
+                    // 如果 markmap 失败，显示 markdown 文本
+                    markmapDiv.innerHTML = '<pre>' + currentMindmapMarkdown + '</pre>';
+                    addMsg('系统', '思维导图生成成功（文本模式）');
+                } else {
+                    addMsg('错误', data.error || '生成失败：未返回思维导图内容');
+                }
+            } catch (err) {
+                console.error('Mindmap generation error:', err);
+                console.error('Error stack:', err.stack);
+                markmapDiv.innerHTML = '';
+                addMsg('错误', '生成失败：' + err.message);
+            }
+        }
+
+        function exportMindmap(type) {
+            const svg = document.querySelector('#markmap svg');
+            const pre = document.querySelector('#markmap pre');
+
+            // 如果是文本模式，导出 markdown
+            if (pre && !svg) {
+                const markdown = pre.textContent;
+                const blob = new Blob([markdown], {type: 'text/markdown'});
+                download(blob, '思维导图.md');
+                return;
+            }
+
+            if (!svg) {
+                alert('请先生成思维导图');
+                return;
+            }
+
+            console.log('开始导出...', type);
+
+            if (type === 'svg') {
+                // 导出 SVG
+                try {
+                    const serializer = new XMLSerializer();
+                    const svgString = serializer.serializeToString(svg);
+                    console.log('SVG 长度:', svgString.length);
+
+                    const blob = new Blob([svgString], {type: 'image/svg+xml'});
+                    download(blob, '思维导图.svg');
+                } catch (e) {
+                    console.error('SVG 导出错误:', e);
+                    alert('SVG 导出失败: ' + e.message);
+                }
+            } else {
+                // 导出 PNG
+                try {
+                    const serializer = new XMLSerializer();
+                    const svgString = serializer.serializeToString(svg);
+
+                    // 获取 SVG 实际尺寸
+                    const rect = svg.getBoundingClientRect();
+                    const width = rect.width || svg.getAttribute('width') || 1200;
+                    const height = rect.height || svg.getAttribute('height') || 800;
+
+                    console.log('SVG 尺寸:', width, 'x', height);
+
+                    // 设置 SVG 的明确尺寸
+                    svg.setAttribute('width', width);
+                    svg.setAttribute('height', height);
+
+                    const svgData = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+
+                    img.onload = function() {
+                        console.log('图片加载成功，尺寸:', img.width, 'x', img.height);
+                        canvas.width = img.width * 2;
+                        canvas.height = img.height * 2;
+                        ctx.scale(2, 2);
+
+                        // 设置白色背景
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                        ctx.drawImage(img, 0, 0);
+
+                        canvas.toBlob(blob => {
+                            if (blob) {
+                                console.log('PNG blob 创建成功，大小:', blob.size);
+                                download(blob, '思维导图.png');
+                            } else {
+                                alert('PNG 导出失败：无法创建图片');
+                            }
+                        }, 'image/png');
+                    };
+
+                    img.onerror = function(e) {
+                        console.error('图片加载错误:', e);
+                        alert('图片加载失败，请重试');
+                    };
+
+                    img.src = svgData;
+                } catch (e) {
+                    console.error('PNG 导出错误:', e);
+                    alert('PNG 导出失败: ' + e.message);
+                }
+            }
+        }
+
+        function download(blob, name) {
+            try {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = name;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+
+                a.click();
+
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+
+                console.log('下载触发:', name);
+            } catch (e) {
+                console.error('下载错误:', e);
+                alert('下载失败: ' + e.message);
+            }
+        }
+
+        function shareChat() {
+            if (chatHistory.length === 0) return alert('暂无聊天记录');
+
+            const data = btoa(unescape(encodeURIComponent(JSON.stringify(chatHistory))));
+            const link = location.origin + location.pathname + '?share=' + data;
+            prompt('复制分享链接（任何人打开即可查看聊天记录）：', link);
+        }
+
+        // 页面加载时恢复分享的聊天记录
+        const params = new URLSearchParams(location.search);
+        if (params.has('share')) {
+            try {
+                const history = JSON.parse(decodeURIComponent(escape(atob(params.get('share')))));
+                history.forEach(m => addMsg(m.sender, m.text));
+            } catch (e) {
+                console.error('分享链接解析失败');
+            }
+        }
+    </script>
+</body>
+</html>
+
