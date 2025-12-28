@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
   try {
     const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'DeepSeek API Key 未设置' });
+      return res.status(500).json({ error: 'DeepSeek API Key sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX' });
     }
 
     // 读取上传的PDF文件
@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
     }
 
     // 直接 POST 请求 DeepSeek API（核心植入部分）
-    const deepseekResponse = await fetch('https://api.deepseek.com/chat/completions', {
+    const deepseekResponse = await fetch('https://tb.api.mkeai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -68,3 +68,4 @@ module.exports.config = {
     sizeLimit: '15mb'
   }
 };
+
