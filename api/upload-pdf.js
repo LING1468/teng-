@@ -1,73 +1,64 @@
+// api/upload-pdf.js - DeepSeek 直接 POST 请求植入版
 const pdfParse = require('pdf-parse');
 
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: '仅支持 POST' });
+    return res.status(405).json({ error: '仅支持 POST 请求' });
   }
 
   try {
     const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'DEEPSEEK_API_KEY sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX' });
+      return res.status(500).json({ error: 'DeepSeek API Key 未设置' });
     }
 
-    // 读取文件
+    // 读取上传的PDF文件
     const buffers = [];
     for await (const chunk of req) buffers.push(chunk);
     const buffer = Buffer.concat(buffers);
 
-    if (buffer.length === 0) {
-      return res.status(400).json({ error: '未收到文件数据' });
-    }
-
-    // 解析 PDF
+    // 解析PDF文本
     const pdfData = await pdfParse(buffer);
-    const text = pdfData.text.substring(0, 20000);
+    const text = pdfData.text.substring(0, 20000); // 限制长度
 
     if (!text.trim()) {
-      return res.status(400).json({ error: 'PDF 无可提取文本（可能是纯图片扫描件）' });
+      return res.status(400).json({ error: 'PDF 无文本内容' });
     }
 
-    // 调用 DeepSeek
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    // 直接 POST 请求 DeepSeek API（核心植入部分）
+    const deepseekResponse = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'deepseek-chat',  // 通用模型
         messages: [
-          { role: 'system', content: '你是一个专业的PDF总结助手，用简洁自然的中文回复。' },
-          { role: 'user', content: `请总结以下PDF内容（300字以内）：\n${text}` }
+          { role: 'system', content: '你是一个专业的文档总结助手，用简洁自然的中文回复。' },
+          { role: 'user', content: `请总结以下文档内容（400字以内）：\n${text}` }
         ],
         temperature: 0.6,
-        max_tokens: 500,
-      }),
+        max_tokens: 500
+      })
     });
 
-    // 关键：检查响应状态
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('DeepSeek API error:', response.status, errText);
-      return res.status(500).json({ 
-        error: `DeepSeek API错误 ${response.status}`, 
-        details: errText 
-      });
+    if (!deepseekResponse.ok) {
+      const err = await deepseekResponse.text();
+      throw new Error(`DeepSeek API错误: ${deepseekResponse.status} ${err}`);
     }
 
-    const data = await response.json();
-    const summary = data.choices[0]?.message?.content?.trim() || 'AI无回复';
+    const data = await deepseekResponse.json();
+    const summary = data.choices[0]?.message?.content?.trim() || 'AI未能生成总结';
 
+    // 返回给前端
     res.status(200).json({ summary, success: true });
+
   } catch (error) {
-    console.error('Final error:', error);
-    res.status(500).json({ 
-      error: '上传处理失败', 
-      details: error.message || '未知错误' 
-    });
+    console.error('DeepSeek调用失败:', error);
+    res.status(500).json({ error: error.message || 'AI处理失败' });
   }
 };
 
