@@ -23,10 +23,10 @@ module.exports = async (req, res) => {
     // 使用该代理支持的稳定模型
     const response = await fetch('https://tb.api.mkeai.com/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // 该代理免费版无需 API Key，如果需要可加 Bearer your-key
-      },
+     headers: {
+    'Content-Type': 'application/json',
+    ...(apiKey && { 'Authorization': `Bearer ${sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX}` })  // 自动添加Key
+  },
       body: JSON.stringify({
         model: 'deepseek-chat',  // ← 关键：换成这个模型，立即成功！
         messages: [
@@ -59,3 +59,4 @@ module.exports.config = {
     sizeLimit: '15mb'
   }
 };
+
