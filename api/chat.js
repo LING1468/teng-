@@ -12,18 +12,13 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const apiKey = process.env.MKEAI_API_KEY || 'sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX';
-
     const response = await fetch('https://tb.api.mkeai.com/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(apiKey && { 'Authorization': `Bearer ${apiKey}` })
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',  // 试常见模型
+        model: 'deepseek-chat',  // ← 换成这个
         messages: [
-          { role: 'system', content: '你是一个PDF内容助手，用自然中文回复。' },
+          { role: 'system', content: '你是一个PDF内容专家，用自然中文回复。' },
           { role: 'user', content: message }
         ],
         temperature: 0.7,
