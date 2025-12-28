@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
     const pdfData = await pdfParse(buffer);
     const text = pdfData.text.substring(0, 20000);
 
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    const response = await fetch('https://tb.api.mkeai.com', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
@@ -52,4 +52,5 @@ module.exports.config = {
     sizeLimit: '15mb'
   }
 };
+
 
