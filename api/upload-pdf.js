@@ -1,56 +1,33 @@
-const pdfParse = require('pdf-parse');
-
 module.exports = async (req, res) => {
+  // 强制返回 JSON，防止 Vercel HTML 错误页
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: '仅支持 POST' });
+    return res.status(405).json({ error: '只支持 POST' });
   }
 
   try {
-    if (!process.env.DEEPSEEK_API_KEY) {
-      return res.status(500).json({ error: 'sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX' });
-    }
-
+    // 读取文件流
     const buffers = [];
     for await (const chunk of req) buffers.push(chunk);
     const buffer = Buffer.concat(buffers);
 
-    const pdfData = await pdfParse(buffer);
-    const text = pdfData.text.substring(0, 20000);
-
-    const response = await fetch('https://tb.api.mkeai.com', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: '你是一个专业的PDF总结助手，用简洁自然的中文回复。' },
-          { role: 'user', content: `请总结以下PDF内容（300字以内）：\n${text}` }
-        ],
-        temperature: 0.6,
-        max_tokens: 500,
-      }),
+    // 直接返回成功（测试函数是否正常运行）
+    res.status(200).json({
+      summary: `后端函数正常运行！收到文件大小：${buffer.length} bytes`,
+      success: true,
+      tip: '如果看到这条消息，说明500错误已解决，可以恢复完整AI功能'
     });
 
-    const data = await response.json();
-    const summary = data.choices[0]?.message?.content?.trim() || '总结失败';
-
-    res.status(200).json({ summary, success: true });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: error.message || '服务器错误' });
+    console.error('Test error:', error);
+    res.status(500).json({ error: '测试失败', message: error.message });
   }
 };
 
 module.exports.config = {
   api: {
     bodyParser: false,
-    sizeLimit: '15mb'
+    sizeLimit: '10mb'
   }
 };
-
-
