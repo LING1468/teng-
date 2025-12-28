@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    const response = await fetch('https://tb.api.mkeai.com', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.sk-fcd93f7691d24d7ca8d8e1908214179a}`,
@@ -38,3 +38,4 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: error.message || 'AI调用失败' });
   }
 };
+
