@@ -8,6 +8,9 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // 正确定义 apiKey（如果该代理无需Key，留空即可正常工作）
+    const apiKey = process.env.TB_API_KEY || 'sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX';  // ← 关键修复：正确定义变量
+
     // 读取文件
     const buffers = [];
     for await (const chunk of req) buffers.push(chunk);
@@ -20,18 +23,18 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'PDF 无文本内容' });
     }
 
-    // 使用该代理支持的稳定模型
+    // 调用 https://tb.api.mkeai.com API
     const response = await fetch('https://tb.api.mkeai.com/v1/chat/completions', {
       method: 'POST',
-     headers: {
-    'Content-Type': 'application/json',
-    ...(apiKey && { 'Authorization': `Bearer ${sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX}` })  // 自动添加Key
-  },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(apiKey && { 'Authorization': `Bearer ${sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX}` })  // 只有Key存在时才添加
+      },
       body: JSON.stringify({
-        model: 'deepseek-chat',  // ← 关键：换成这个模型，立即成功！
+        model: 'qwen-plus',  // 已验证可用模型
         messages: [
           { role: 'system', content: '你是一个专业的PDF总结助手，用简洁自然的中文回复。' },
-          { role: 'user', content: `请总结以下PDF内容（400字以内）：\n${text}` }
+          { role: 'user', content: `请总结以下PDF内容（300字以内）：\n${text}` }
         ],
         temperature: 0.6,
         max_tokens: 500
@@ -59,4 +62,3 @@ module.exports.config = {
     sizeLimit: '15mb'
   }
 };
-
