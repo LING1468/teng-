@@ -14,7 +14,10 @@ module.exports = async (req, res) => {
   try {
     const response = await fetch('https://tb.api.mkeai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+     headers: {
+    'Content-Type': 'application/json',
+    ...(apiKey && { 'Authorization': `Bearer ${sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX}` })  // 自动添加Key
+  },
       body: JSON.stringify({
         model: 'deepseek-chat',  // ← 换成这个
         messages: [
@@ -38,3 +41,4 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: error.message || '调用失败' });
   }
 };
+
