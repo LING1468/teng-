@@ -1,11 +1,5 @@
 {
-  "name": "aipdfl",
-  "version": "1.0.0",
-  "description": "2025 终极AI PDF平台 - DeepSeek免费后端",
   "dependencies": {
     "pdf-parse": "^1.1.1"
-  },
-  "engines": {
-    "node": ">=18"
   }
 }
