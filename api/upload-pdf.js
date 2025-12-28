@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
         model: 'qwen-plus',  // 已验证可用模型
         messages: [
           { role: 'system', content: '你是一个专业的PDF总结助手，用简洁自然的中文回复。' },
-          { role: 'user', content: `请总结以下PDF内容（300字以内）：\n${text}` }
+          { role: 'user', content: `请总结以下PDF内容（400字以内）：\n${text}` }
         ],
         temperature: 0.6,
         max_tokens: 500
@@ -62,3 +62,4 @@ module.exports.config = {
     sizeLimit: '15mb'
   }
 };
+
