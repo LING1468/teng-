@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
     const response = await fetch('https://tb.api.mkeai.com', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.sk-fcd93f7691d24d7ca8d8e1908214179a}`,
+        'Authorization': `Bearer ${process.env.sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -38,4 +38,5 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: error.message || 'AI调用失败' });
   }
 };
+
 
