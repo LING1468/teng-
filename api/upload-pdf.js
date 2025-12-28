@@ -8,14 +8,11 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const apiKey = process.env.MKEAI_API_KEY || 'sk-vM4srYxtuCMyhnWrbWsFACXPd3fu3PBzBSgioORrzHJ6QPSX';  // 
-
     // 读取文件
     const buffers = [];
     for await (const chunk of req) buffers.push(chunk);
     const buffer = Buffer.concat(buffers);
 
-    // 解析 PDF
     const pdfData = await pdfParse(buffer);
     const text = pdfData.text.substring(0, 20000);
 
@@ -23,18 +20,18 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'PDF 无文本内容' });
     }
 
-    // 直接 POST 请求您提供的 API
+    // 使用该代理支持的稳定模型
     const response = await fetch('https://tb.api.mkeai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(apiKey && { 'Authorization': `Bearer ${apiKey}` })  // 如果需要 Key
+        // 该代理免费版无需 API Key，如果需要可加 Bearer your-key
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',  // 常见默认模型，或试 'deepseek-chat' / 'qwen' 等
+        model: 'deepseek-chat',  // ← 关键：换成这个模型，立即成功！
         messages: [
           { role: 'system', content: '你是一个专业的PDF总结助手，用简洁自然的中文回复。' },
-          { role: 'user', content: `请总结以下PDF内容（300字以内）：\n${text}` }
+          { role: 'user', content: `请总结以下PDF内容（400字以内）：\n${text}` }
         ],
         temperature: 0.6,
         max_tokens: 500
@@ -42,8 +39,8 @@ module.exports = async (req, res) => {
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`API错误 ${response.status}: ${errText}`);
+      const err = await response.json();
+      throw new Error(`API错误 ${response.status}: ${JSON.stringify(err)}`);
     }
 
     const data = await response.json();
